@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Timer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .task-input {
+      margin-bottom: 10px;
+    }
+    .task-list {
+      margin-top: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid black;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+    .today-task {
+      background-color: #d0f0c0; /* Light green for today's tasks */
+      cursor: pointer; /* Show pointer cursor for row */
+    }
+    .button {
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Task Timer</h2>
+
+<div class="task-input">
+  <input type="text" id="taskName" placeholder="Enter task name">
+  <button onclick="startTask()">Start Task</button>
+  <button onclick="stopTask()">Stop Task</button>
+</div>
+
+<h3>Active Task: <span id="activeTask">None</span></h3>
+
+<div class="task-list">
+  <h3>Today's Tasks</h3>
+  <div id="todayTasks"></div>
+</div>
+
+<button onclick="showDetails()">View All Tasks</button>
+
+<script>
+  let tasks = JSON.parse(localStorage.getItem('tasks')) || {}; 
+  let activeTask = localStorage.getItem('activeTask') || null; 
+  let taskStartTime = localStorage.getItem('taskStartTime') ? new Date(localStorage.getItem('taskStartTime')) : null; 
+
+  const today = new Date().toLocaleDateString(); 
+  
+  document.getElementById('activeTask').innerText = activeTask || 'None';
+  updateTodayTasks(); 
+
+  function startTask(taskName = null) {
+    if (!taskName) {
+      taskName = document.getElementById('taskName').value.trim();
+    }
+    if (!taskName) {
+      alert('Please enter a task name.');
+      return;
+    }
+    if (activeTask) {
+      stopTask(); 
+    }
+
+    activeTask = taskName;
+    taskStartTime = new Date(); 
+
+    localStorage.setItem('activeTask', activeTask);
+    localStorage.setItem('taskStartTime', taskStartTime.toString());
+
+    document.getElementById('activeTask').innerText = activeTask;
+  }
+
+  function stopTask() {
+    if (!activeTask) {
+      alert('No task is currently running.');
+      return;
+    }
+
+    const taskEndTime = new Date();
+    const timeSpent = (taskEndTime - taskStartTime) / 1000 / 60; 
+
+    const taskComment = prompt('Enter comment for the task:'); 
+
+    if (!taskComment) {
+      alert('Comment is required to stop the task.');
+      return;
+    }
+
+    const taskKey = `${activeTask}-${today}`;
+
+    if (tasks[taskKey]) {
+      tasks[taskKey].timeSpent += timeSpent;
+      tasks[taskKey].comments.push({ text: taskComment, timeSpent: timeSpent });
+    } else {
+      tasks[taskKey] = {
+        taskName: activeTask,
+        timeSpent: timeSpent,
+        date: today,
+        comments: [{ text: taskComment, timeSpent: timeSpent }]
+      };
+    }
+
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+    updateTodayTasks(); 
+
+    activeTask = null;
+    taskStartTime = null;
+    document.getElementById('activeTask').innerText = 'None';
+    localStorage.removeItem('activeTask');
+    localStorage.removeItem('taskStartTime');
+  }
+
+  function updateTodayTasks() {
+    const todayTasks = document.getElementById('todayTasks');
+    todayTasks.innerHTML = ''; 
+
+    const todayTasksList = Object.entries(tasks).filter(([taskKey]) => taskKey.includes(`-${today}`));
+
+    if (todayTasksList.length === 0) {
+      todayTasks.innerHTML = '<p>No tasks for today.</p>';
+      return;
+    }
+
+    const table = document.createElement('table');
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>Task Name</th>
+          <th>Total Time Spent (minutes)</th>
+          <th>Comments</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${todayTasksList.map(([taskKey, details]) => `
+          <tr class="today-task" onclick="handleTaskClick('${details.taskName}')">
+            <td>${details.taskName}</td>
+            <td>${(details.timeSpent || 0).toFixed(2)}</td>
+            <td>
+              ${(details.comments || []).map(comment => `<strong>Comment:</strong> ${comment.text} - <strong>Time:</strong> ${(comment.timeSpent || 0).toFixed(2)} mins`).join('<br>')}
+            </td>
+            <td>
+              <button class="button" onclick="editTask('${taskKey}'); event.stopPropagation();">Edit</button>
+              <button class="button" onclick="deleteTask('${taskKey}'); event.stopPropagation();">Delete</button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    `;
+    todayTasks.appendChild(table);
+  }
+
+  function editTask(taskKey) {
+    const task = tasks[taskKey];
+    const newTaskName = prompt('Edit task name:', task.taskName);
+    if (newTaskName) {
+      const timeSpent = task.timeSpent;
+      const comments = task.comments;
+
+      delete tasks[taskKey]; // Remove old task entry
+      const newKey = `${newTaskName}-${today}`;
+
+      tasks[newKey] = { taskName: newTaskName, timeSpent, date: today, comments };
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      updateTodayTasks();
+    }
+  }
+
+  function deleteTask(taskKey) {
+    if (confirm('Are you sure you want to delete this task?')) {
+      delete tasks[taskKey];
+      localStorage.setItem('tasks', JSON.stringify(tasks));
+      updateTodayTasks();
+    }
+  }
+
+  function handleTaskClick(taskName) {
+    if (activeTask) {
+      stopTask(); 
+      startTask(taskName); 
+    } else {
+      startTask(taskName);
+    }
+  }
+
+  function showDetails() {
+    window.location.href = 'details.html'; 
+  }
+
+  // Service Worker registration code...
+</script>
+
+</body>
+</html>

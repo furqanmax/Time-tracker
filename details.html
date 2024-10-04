@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Details</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h3 {
+      margin-top: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid black;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+
+<h2>All Task Details</h2>
+<div id="taskDetails"></div>
+
+<button onclick="goBack()">Back to Home</button>
+
+<script>
+  let tasks = JSON.parse(localStorage.getItem('tasks')) || {};
+
+  function goBack() {
+    window.location.href = 'index.html'; // Redirect back to main page
+  }
+
+  function renderTaskDetails() {
+    const taskDetails = document.getElementById('taskDetails');
+    taskDetails.innerHTML = ''; // Clear previous content
+
+    // Group tasks by date
+    const tasksByDate = {};
+    for (const [taskKey, details] of Object.entries(tasks)) {
+      const date = details.date;
+      if (!tasksByDate[date]) {
+        tasksByDate[date] = [];
+      }
+      tasksByDate[date].push({ taskKey, details });
+    }
+
+    // Render tasks grouped by date
+    for (const [date, taskList] of Object.entries(tasksByDate)) {
+      const section = document.createElement('div');
+      section.innerHTML = `<h3>${date}</h3>`;
+
+      const table = document.createElement('table');
+      table.innerHTML = `
+        <thead>
+          <tr>
+            <th>Task Name</th>
+            <th>Total Time Spent (minutes)</th>
+            <th>Comments</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${taskList.map(({ taskKey, details }) => `
+            <tr>
+              <td>${details.taskName}</td>
+              <td>${(details.timeSpent || 0).toFixed(2)}</td>
+              <td>
+                ${(details.comments || []).map(comment => `<strong>Comment:</strong> ${comment.text} - <strong>Time:</strong> ${(comment.timeSpent || 0).toFixed(2)} mins`).join('<br>')}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      `;
+      section.appendChild(table);
+      taskDetails.appendChild(section);
+    }
+  }
+
+  renderTaskDetails(); // Initial call to render task details
+</script>
+
+</body>
+</html>
