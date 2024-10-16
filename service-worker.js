@@ -2,38 +2,34 @@ const CACHE_NAME = 'task-timer-cache-v1';
 const urlsToCache = [
   '/',
   '/index.html',
+  '/styles.css', // Add your CSS file here if any
+  '/script.js',  // Add your JS file here if any
   '/manifest.json',
+  'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css',
+  'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
   '/service-worker.js'
 ];
 
-// Install the service worker
 self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(function(cache) {
-        console.log('Opened cache');
         return cache.addAll(urlsToCache);
       })
   );
 });
 
-// Cache and return requests
 self.addEventListener('fetch', function(event) {
   event.respondWith(
     caches.match(event.request)
       .then(function(response) {
-        // Cache hit - return the response from the cache
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
+        return response || fetch(event.request);
       })
   );
 });
 
-// Update the service worker
 self.addEventListener('activate', function(event) {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
