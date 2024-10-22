@@ -7,114 +7,7 @@
   <title>Task Timer</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
- <style>
-    body {
-      font-family: 'Roboto', sans-serif;
-      background-color: #f4f4f9;
-      margin: 20px;
-      color: #333;
-    }
-    h2 {
-      text-align: center;
-      color: #4a90e2;
-      font-weight: 500;
-    }
-    .active-task-title{
-      font-size: 28px;
-      color:#004797;
-    }
-    .task-input, .task-list, .active-task {
-      max-width: 900px;
-      margin: 20px auto;
-      padding: 20px;
-      background-color: #fff;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-    .task-input input[type="text"] {
-      width: calc(100% - 100px);
-      padding: 10px;
-      margin-right: 10px;
-      border: 2px solid #ddd;
-      border-radius: 8px;
-      outline: none;
-    }
-    .task-input button {
-      padding: 10px 15px;
-      background-color: #4a90e2;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: background-color 0.3s ease;
-    }
-    .task-input button:hover {
-      background-color: #357abd;
-    }
-    h3 {
-      font-size: 1.5rem;
-      color: #4a90e2;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-      background-color: #fff;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    table thead {
-      background-color: #4a90e2;
-      color: #fff;
-    }
-    table th, table td {
-      padding: 12px 15px;
-      text-align: left;
-    }
-    table tbody tr:nth-child(odd) {
-      background-color: #f9f9f9;
-    }
-    table tbody tr:hover {
-      background-color: #f0f0f0;
-    }
-    .today-task {
-      cursor: pointer;
-    }
-    .button {
-      padding: 6px 12px;
-      background-color: #4a90e2;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-    }
-    .button:hover {
-      background-color: #357abd;
-    }
-    .button-danger {
-      background-color: #e94b35;
-    }
-    .button-danger:hover {
-      background-color: #d14030;
-    }
-    #todayTasks p {
-      text-align: center;
-      color: #888;
-      margin-top: 10px;
-    }
-    @media (max-width: 600px) {
-      .task-input input[type="text"] {
-        width: 100%;
-        margin-bottom: 10px;
-      }
-      .task-input button {
-        width: 100%;
-        margin-top: 10px;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -126,7 +19,12 @@
     <button onclick="stopTask()">Stop Task</button>
   </div>
   
-  <div class="active-task"><h3><small>Active Task:</small> <span id="activeTask" class="active-task-title">None</span><br><small>(Elapsed Time: <span id="elapsedTime">00:00:00</span>)</small> </h3></div>
+  <div class="active-task">
+    <h3><small>Active Task:</small> 
+      <span id="activeTask" class="active-task-title">None</span><br>
+      <small>(Elapsed Time: <span id="elapsedTime">00:00:00</span>)</small> 
+    </h3>
+  </div>
 
   <div class="task-list">
     <h3>Today's Tasks</h3>
@@ -135,38 +33,36 @@
   </div>
   
   <button onclick="showDetails()" style="display:block; margin: 20px auto; padding: 10px 20px; background-color: #4a90e2; color: #fff; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.3s ease;">View All Tasks</button>
-  
+  <button onclick="showWeeklySummary()" style="display:block; margin: 20px auto; padding: 10px 20px; background-color: #4a90e2; color: #fff; border: none; border-radius: 8px; cursor: pointer; transition: background-color 0.3s ease;">Weekly Summary</button>
+
 <script>
-   let tasks = JSON.parse(localStorage.getItem('tasks')) || {}; 
+  let tasks = JSON.parse(localStorage.getItem('tasks')) || {}; 
   let activeTask = localStorage.getItem('activeTask') || null; 
   let taskStartTime = localStorage.getItem('taskStartTime') ? new Date(localStorage.getItem('taskStartTime')) : null; 
-  let timerInterval = null; // This will hold the interval ID for the timer
+  let timerInterval = null; 
 
   const today = new Date().toLocaleDateString(); 
   
   document.getElementById('activeTask').innerText = activeTask || 'None';
   updateTodayTasks(); 
 
-   // Function to format time in HH:MM:SS
-   function formatTime(seconds) {
+  function formatTime(seconds) {
     const hours = Math.floor(seconds / 3600).toString().padStart(2, '0');
     const minutes = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
     const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
     return `${hours}:${minutes}:${secs}`;
   }
 
-  // Function to start the real-time timer
   function startRealTimeTimer() {
     const startTime = taskStartTime ? new Date(taskStartTime) : new Date();
     
     timerInterval = setInterval(() => {
       const currentTime = new Date();
-      const timeElapsed = Math.floor((currentTime - startTime) / 1000); // Time elapsed in seconds
+      const timeElapsed = Math.floor((currentTime - startTime) / 1000); 
       document.getElementById('elapsedTime').innerText = formatTime(timeElapsed);
     }, 1000);
   }
 
-  // Function to start logging a task
   function startTask(taskName = null) {
     if (!taskName) {
       taskName = document.getElementById('taskName').value.trim();
@@ -176,28 +72,27 @@
       return;
     }
     if (activeTask) {
-      stopTask(); // Stop any running task
+      stopTask(); 
     }
 
     activeTask = taskName;
-    taskStartTime = new Date(); // Capture start time
+    taskStartTime = new Date(); 
 
     localStorage.setItem('activeTask', activeTask);
     localStorage.setItem('taskStartTime', taskStartTime.toString());
 
     document.getElementById('activeTask').innerText = activeTask;
-    startRealTimeTimer(); // Start the real-time timer
+    startRealTimeTimer(); 
   }
 
-    // Function to stop logging the current task
-    function stopTask() {
+  function stopTask() {
     if (!activeTask) {
       alert('No task is currently running.');
       return;
     }
 
     const taskEndTime = new Date();
-    const timeSpent = (taskEndTime - taskStartTime) / 1000 / 60; // Convert ms to minutes
+    const timeSpent = (taskEndTime - taskStartTime) / 1000 / 60; 
     const taskComment = prompt('Enter comment for the task:'); 
 
     if (!taskComment) {
@@ -215,7 +110,8 @@
         taskName: activeTask,
         timeSpent: timeSpent,
         date: today,
-        comments: [{ text: taskComment, timeSpent: timeSpent }]
+        comments: [{ text: taskComment, timeSpent: timeSpent }],
+        completed: false 
       };
     }
 
@@ -225,10 +121,34 @@
     activeTask = null;
     taskStartTime = null;
     document.getElementById('activeTask').innerText = 'None';
-    document.getElementById('elapsedTime').innerText = '00:00:00'; // Reset timer display
-    clearInterval(timerInterval); // Stop the real-time timer
+    document.getElementById('elapsedTime').innerText = '00:00:00'; 
+    clearInterval(timerInterval); 
     localStorage.removeItem('activeTask');
     localStorage.removeItem('taskStartTime');
+  }
+
+  // Function to toggle task completion status
+  function toggleTaskStatus(taskKey) {
+    tasks[taskKey].completed = !tasks[taskKey].completed; 
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+    updateTodayTasks(); 
+  }
+
+  // Function to mark a task as done with a final comment
+  function markTaskAsDone(taskKey) {
+    const task = tasks[taskKey];
+    const finalComment = prompt('Enter final comment for task completion:');
+    
+    if (!finalComment) {
+      alert('Comment is required.');
+      return;
+    }
+    
+    task.comments.push({ text: finalComment, timeSpent: 0 });
+    task.completed = true; 
+
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+    updateTodayTasks();
   }
 
   function updateTodayTasks() {
@@ -236,11 +156,11 @@
     todayTasks.innerHTML = ''; 
 
     const todayTasksList = Object.entries(tasks).filter(([taskKey]) => taskKey.includes(`-${today}`));
-    let totalMinutes = 0; // Initialize total time counter
+    let totalMinutes = 0; 
 
     if (todayTasksList.length === 0) {
       todayTasks.innerHTML = '<p>No tasks for today.</p>';
-      document.getElementById('totalTime').innerText = ''; // Clear the total time display
+      document.getElementById('totalTime').innerText = ''; 
       return;
     }
 
@@ -251,12 +171,13 @@
           <th>Task Name</th>
           <th>Total Time Spent (minutes)</th>
           <th>Comments</th>
+          <th>Status</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         ${todayTasksList.map(([taskKey, details]) => {
-          totalMinutes += details.timeSpent || 0; // Add task's time to total
+          totalMinutes += details.timeSpent || 0; 
           return `
           <tr class="today-task" onclick="handleTaskClick('${details.taskName}')">
             <td>${details.taskName}</td>
@@ -264,46 +185,23 @@
             <td>
               ${(details.comments || []).map(comment => `<strong>Comment:</strong> ${comment.text} - <strong>Time:</strong> ${(comment.timeSpent || 0).toFixed(2)} mins`).join('<br>')}
             </td>
+            <td>${details.completed ? 'Completed' : 'Not Completed'}</td>
             <td>
+              
+              ${!details.completed ? `<button class="button" onclick="markTaskAsDone('${taskKey}'); event.stopPropagation();">Mark as Done</button>` : `<button class="button" onclick="toggleTaskStatus('${taskKey}'); event.stopPropagation();">Toggle Status</button>`}
               <button class="button" onclick="editTask('${taskKey}'); event.stopPropagation();">Edit</button>
               <button class="button button-danger" onclick="deleteTask('${taskKey}'); event.stopPropagation();">Delete</button>
             </td>
-          </tr>`;
-        }).join('')}
+          </tr>`;}).join('')}
       </tbody>
     `;
+
     todayTasks.appendChild(table);
-
-    // Calculate total hours and minutes from total minutes
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = Math.floor(totalMinutes % 60);
-
-    // Display total time at the bottom of the page
-    document.getElementById('totalTime').innerText = `Total Time Spent Today: ${hours} hours and ${minutes} minutes`;
+    document.getElementById('totalTime').innerText = `Total Time Today: ${totalMinutes.toFixed(2)} minutes`; 
   }
 
-  function editTask(taskKey) {
-    const task = tasks[taskKey];
-    const newTaskName = prompt('Edit task name:', task.taskName);
-    if (newTaskName) {
-      const timeSpent = task.timeSpent;
-      const comments = task.comments;
-
-      delete tasks[taskKey]; // Remove old task entry
-      const newKey = `${newTaskName}-${today}`;
-
-      tasks[newKey] = { taskName: newTaskName, timeSpent, date: today, comments };
-      localStorage.setItem('tasks', JSON.stringify(tasks));
-      updateTodayTasks();
-    }
-  }
-
-  function deleteTask(taskKey) {
-    if (confirm('Are you sure you want to delete this task?')) {
-      delete tasks[taskKey];
-      localStorage.setItem('tasks', JSON.stringify(tasks));
-      updateTodayTasks();
-    }
+  function showDetails() {
+    window.open('details.html', '_blank');
   }
 
   function handleTaskClick(taskName) {
@@ -315,28 +213,39 @@
     }
   }
 
-  function showDetails() {
-    window.location.href = 'details.html'; 
-  }
+  function showWeeklySummary() {
+    const summaryWindow = window.open('', '_blank', 'width=600,height=800');
+    summaryWindow.document.write('<h3>Weekly Summary</h3>');
+    summaryWindow.document.write('<ul>');
+    
+    const tasksGroupedByDate = {};
 
-  if (activeTask && taskStartTime) {
-    startRealTimeTimer(); // If there's an active task when the page loads, start the timer
-  }
-  // Service Worker registration code...
+    Object.entries(tasks).forEach(([taskKey, taskData]) => {
+      const date = taskData.date;
+      if (!tasksGroupedByDate[date]) {
+        tasksGroupedByDate[date] = { completed: [], notCompleted: [] };
+      }
 
-
-  // Register Service Worker
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-      navigator.serviceWorker.register('/service-worker.js').then(function(registration) {
-        console.log('ServiceWorker registration successful with scope: ', registration.scope);
-      }, function(error) {
-        console.log('ServiceWorker registration failed: ', error);
-      });
+      if (taskData.completed) {
+        tasksGroupedByDate[date].completed.push(taskData.taskName);
+      } else {
+        tasksGroupedByDate[date].notCompleted.push(taskData.taskName);
+      }
     });
-  }
 
+    Object.entries(tasksGroupedByDate).forEach(([date, summary]) => {
+      summaryWindow.document.write(`<li><strong>${date}</strong>:`); 
+      summaryWindow.document.write('<ul>');
+      summaryWindow.document.write('<li>Completed Tasks: ' + (summary.completed.length ? summary.completed.join(', ') : 'None') + '</li>');
+      summaryWindow.document.write('<li>Tasks Not Completed: ' + (summary.notCompleted.length ? summary.notCompleted.join(', ') : 'None') + '</li>');
+      summaryWindow.document.write('</ul></li>');
+    });
+
+    summaryWindow.document.write('</ul>');
+  }
 </script>
+
+<script src="pwa.js"></script>
 
 </body>
 </html>

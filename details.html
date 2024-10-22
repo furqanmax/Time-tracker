@@ -3,85 +3,195 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   <title>Task Details</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 20px;
+      padding: 20px;
+      background-color: #f8f9fa;
     }
-    h3 {
-      margin-top: 20px;
+    h2 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .card {
+      margin-bottom: 20px;
+      padding: 15px;
+      background-color: #fff;
+      border: 1px solid #ddd;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
     table {
+      margin-bottom: 20px;
+    }
+    .table th, .table td {
+      vertical-align: middle;
+    }
+    .btn-custom {
+      display: block;
       width: 100%;
-      border-collapse: collapse;
+      margin-top: 20px;
+      padding: 12px 0;
+      background-color: #4a90e2;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
     }
-    table, th, td {
-      border: 1px solid black;
+    .btn-custom:hover {
+      background-color: #357ab8;
     }
-    th, td {
-      padding: 10px;
-      text-align: left;
+    .card-title {
+      margin-bottom: 20px;
+      color: #4a90e2;
+    }
+    .task-actions button {
+      margin-right: 5px;
+    }
+    .badge-completed {
+      background-color: #28a745;
+    }
+    .badge-not-completed {
+      background-color: #dc3545;
+    }
+    .text-muted {
+      font-size: 0.9rem;
     }
   </style>
 </head>
 <body>
 
 <h2>All Task Details</h2>
+<button class="btn btn-custom" onclick="goBack()">Back to Home</button>
 <div id="taskDetails"></div>
-
-<button onclick="goBack()">Back to Home</button>
 
 <script>
   let tasks = JSON.parse(localStorage.getItem('tasks')) || {};
 
   function goBack() {
-    window.location.href = 'index.html'; // Redirect back to main page
+    window.location.href = 'index.html'; // Redirect back to the main page
   }
 
   function renderTaskDetails() {
     const taskDetails = document.getElementById('taskDetails');
     taskDetails.innerHTML = ''; // Clear previous content
 
-    // Group tasks by date
-    const tasksByDate = {};
+    // Group tasks by week and then by day within each week
+    const tasksByWeekAndDay = {};
     for (const [taskKey, details] of Object.entries(tasks)) {
-      const date = details.date;
-      if (!tasksByDate[date]) {
-        tasksByDate[date] = [];
+      const taskDate = new Date(details.date);
+      const weekNumber = getWeekNumber(taskDate);
+      const day = taskDate.toLocaleDateString(); // Group by day
+      
+      if (!tasksByWeekAndDay[weekNumber]) {
+        tasksByWeekAndDay[weekNumber] = {};
       }
-      tasksByDate[date].push({ taskKey, details });
+      if (!tasksByWeekAndDay[weekNumber][day]) {
+        tasksByWeekAndDay[weekNumber][day] = [];
+      }
+      tasksByWeekAndDay[weekNumber][day].push({ taskKey, details });
     }
 
-    // Render tasks grouped by date
-    for (const [date, taskList] of Object.entries(tasksByDate)) {
-      const section = document.createElement('div');
-      section.innerHTML = `<h3>${date}</h3>`;
+    // Render tasks grouped by week and day
+    for (const [week, days] of Object.entries(tasksByWeekAndDay)) {
+      const weekSection = document.createElement('div');
+      weekSection.classList.add('card');
 
-      const table = document.createElement('table');
-      table.innerHTML = `
-        <thead>
-          <tr>
-            <th>Task Name</th>
-            <th>Total Time Spent (minutes)</th>
-            <th>Comments</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${taskList.map(({ taskKey, details }) => `
+      weekSection.innerHTML = `<h3 class="card-title">Week ${week}</h3>`;
+      
+      // Button to generate report for the week
+      const reportButton = document.createElement('button');
+      reportButton.innerText = 'Generate Report for Week ' + week;
+      reportButton.classList.add('btn', 'btn-info', 'mb-3');
+      reportButton.onclick = () => generateReport(week);
+      weekSection.appendChild(reportButton);
+
+      // Render tasks for each day within the week
+      for (const [day, taskList] of Object.entries(days)) {
+        const daySection = document.createElement('div');
+        daySection.innerHTML = `<h4 class="mb-3 text-primary">${day}</h4>`;
+
+        const table = document.createElement('table');
+        table.classList.add('table', 'table-striped', 'table-hover', 'table-responsive');
+        table.innerHTML = `
+          <thead class="table-dark">
             <tr>
-              <td>${details.taskName}</td>
-              <td>${(details.timeSpent || 0).toFixed(2)}</td>
-              <td>
-                ${(details.comments || []).map(comment => `<strong>Comment:</strong> ${comment.text} - <strong>Time:</strong> ${(comment.timeSpent || 0).toFixed(2)} mins`).join('<br>')}
-              </td>
+              <th>Task Name</th>
+              <th>Total Time Spent (minutes)</th>
+              <th>Comments</th>
+              <th>Status</th>
+              <th>Action</th>
             </tr>
-          `).join('')}
-        </tbody>
-      `;
-      section.appendChild(table);
-      taskDetails.appendChild(section);
+          </thead>
+          <tbody>
+            ${taskList.map(({ taskKey, details }) => `
+              <tr>
+                <td>${details.taskName}</td>
+                <td>${(details.timeSpent || 0).toFixed(2)}</td>
+                <td>
+                  ${(details.comments || []).map(comment => `
+                    <p><strong>Comment:</strong> ${comment.text} 
+                    <br><strong>Time:</strong> ${(comment.timeSpent || 0).toFixed(2)} mins</p>
+                  `).join('')}
+                </td>
+                <td id="status-${taskKey}">
+                  <span class="badge ${details.completed ? 'badge-completed' : 'badge-not-completed'}">
+                    ${details.completed ? 'Completed' : 'Not Completed'}
+                  </span>
+                </td>
+                <td class="task-actions">
+                  <button class="btn btn-sm ${details.completed ? 'btn-danger' : 'btn-success'}" onclick="toggleStatus('${taskKey}')">
+                    ${details.completed ? 'Mark as Not Completed' : 'Mark as Completed'}
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        `;
+
+        daySection.appendChild(table);
+        weekSection.appendChild(daySection);
+      }
+
+      taskDetails.appendChild(weekSection);
     }
+  }
+
+  // Function to get the week number of the year from a date
+  function getWeekNumber(date) {
+    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+    const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
+    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+  }
+
+  // Function to generate a report for a specific week
+  function generateReport(week) {
+    localStorage.setItem('reportWeek', week); // Save the week number to localStorage
+    window.location.href = 'report.html'; // Redirect to the report page
+  }
+
+  // Function to toggle task status between 'Completed' and 'Not Completed'
+  function toggleStatus(taskKey) {
+    // Toggle the status in the localStorage object
+    tasks[taskKey].completed = !tasks[taskKey].completed;
+
+    // Save the updated tasks back to localStorage
+    localStorage.setItem('tasks', JSON.stringify(tasks));
+
+    // Update the UI for the task status and button text
+    const statusElement = document.getElementById(`status-${taskKey}`);
+    const newStatus = tasks[taskKey].completed ? 'Completed' : 'Not Completed';
+    const newButtonText = tasks[taskKey].completed ? 'Mark as Not Completed' : 'Mark as Completed';
+
+    statusElement.innerHTML = `
+      <span class="badge ${tasks[taskKey].completed ? 'badge-completed' : 'badge-not-completed'}">
+        ${newStatus}
+      </span>
+    `;
+    event.target.innerText = newButtonText;
   }
 
   renderTaskDetails(); // Initial call to render task details
